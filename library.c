@@ -16,6 +16,7 @@
 
 void InitK(WORD_t* K)
 {
+    // K est supposé alloué à la bonne taille
     K[0] = 0x428a2f98;  K[1] = 0x71374491;  K[2] = 0xb5c0fbcf;  K[3] = 0xe9b5dba5;
     K[4] = 0x3956c25b;  K[5] = 0x59f111f1;  K[6] = 0x923f82a4;  K[7] = 0xab1c5ed5;
     K[8]  = 0xd807aa98; K[9]  = 0x12835b01; K[10] = 0x243185be; K[11] = 0x550c7dc3;
@@ -32,4 +33,71 @@ void InitK(WORD_t* K)
     K[52] = 0x391c0cb3; K[53] = 0x4ed8aa4a; K[54] = 0x5b9cca4f; K[55] = 0x682e6ff3;
     K[56] = 0x748f82ee; K[57] = 0x78a5636f; K[58] = 0x84c87814; K[59] = 0x8cc70208;
     K[60] = 0x90befffa; K[61] = 0xa4506ceb; K[62] = 0xbef9a3f7; K[63] = 0xc67178f2;
+}
+
+WORD_t Ch(WORD_t x,
+          WORD_t y,
+          WORD_t z)
+{
+    return (  ( x & y ) ^ ( ~x  & z ) );
+}
+
+WORD_t Maj(WORD_t x,
+           WORD_t y,
+           WORD_t z)
+{
+    return (  ( x & y ) ^ ( x & z ) ^ (y & z)  );
+}
+
+WORD_t E0(WORD_t x)
+{
+    return (Sn(x, 2) ^ Sn(x, 13) ^ Sn(x, 22));
+}
+
+WORD_t E1(WORD_t x)
+{
+    return (Sn(x, 6) ^ Sn(x, 11) ^ Sn(x, 25));
+}
+
+WORD_t sig0(WORD_t x)
+{
+    return (Sn(x,7) ^ Sn(x, 18) ^ Rn(x, 3) );
+}
+
+WORD_t sig1(WORD_t x)
+{
+    return (Sn(x, 17) ^ Sn(x, 19) ^ Rn(x, 10));
+}
+
+WORD_t Sn(WORD_t x, u_int32 n)
+{
+    if( (n > 32) || (n < 0) )
+    {
+        perror("circulat shift, mauvaise valeur de n"); abort();
+    }
+
+    return ( (word_x >> n) | (word_x << (32 - n)) );
+}
+
+WORD_t Rn(WORD_t x, u_int32 n)
+{
+    return ( x << n);
+}
+
+void RemoveAddedBytes(FILE* fptr,
+                      u_int64 size)
+{
+    int fd = fileno(fptr);
+    if(fd == -1)
+    {
+        perror("error fileno()\n");
+        exit(-1);
+    }
+    int code = ftruncate(fd, size);
+    //ftruncate echoue et renvoie -1
+    if(code == -1)
+    {
+        perror("error ftruncate\n");
+        exit(-1);
+    }
 }
