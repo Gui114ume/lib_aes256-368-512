@@ -43,6 +43,7 @@ u_int64 GetSize(char* filename);
 void PreComputeW(BYTE* buffer,
                  WORD_t* W);
 
+//
 void BinToHexString(WORD_t* res_word,
                     char* hash);
 
