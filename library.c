@@ -14,6 +14,8 @@
 
 #include "library.h"
 
+WORD_t* glob_K = NULL;
+
 void InitK(WORD_t* K)
 {
     // K est supposé alloué à la bonne taille
@@ -176,19 +178,73 @@ u_int64 GetSize(char* filename)
     return  (stat_buf->st_size);
 }
 
-// alloue W, puis calcule et rempli ce tableau W
+// alloue W, puis calcule et rempli ce tableau  à partir d'un bloc M, contenu dans buffer
 void PreComputeW(BYTE* buffer,
-                 WORD_t* W);
+                 WORD_t* W)
+{
+    W = malloc(sizeof(WORD_t) * 64);
+    for(int i = 0,j = 0; i < 16 * 4 ; j++)
+    {
+        W[j] = (unsigned int) (buffer[i] << 24) ^ (unsigned int) (buffer[i + 1] << 16) ^
+               (unsigned int) (buffer[i + 2] << 8) ^ (unsigned int) (buffer[i + 3]);
+        i += 4;
+    }
+    for(int i = 16 ; i < 64 ; i++)
+    {
+        W[i] = sig1( W[i - 2] ) & (2^32 - 1) + W[i - 7] & (2^32 - 1) + sig0( W[i - 15] ) & (2^32 - 1) + W[i - 16] & (2^32 - 1);
+    }
+}
 
-//
+// Ne pas faire la même fonction que dans sha1_lib, essayer de trouver mieux, sans bug
 void BinToHexString(WORD_t* res_word,
                     char* hash);
 
 void InitRegisters(WORD_t* registers, // un tableau de 8 WORD_t ( taille de H, intermédiate hash value)
-                   WORD_t* H);
+                   WORD_t* H,
+                   int i)
+{
+    if( i == 1)
+    {
+        registers[0] = H1_0; registers[1] = H2_0; registers[2] = H3_0; registers[3] = H4_0;
+        registers[4] = H5_0; registers[5] = H6_0; registers[6] = H7_0; registers[7] = H8_0;
+
+        H[0] = H1_0; H[1] = H2_0; H[2] = H3_0; H[3] = H4_0;
+        H[4] = H5_0; H[5] = H6_0; H[6] = H7_0; H[7] = H8_0;
+    }
+    else
+    {
+        for(int i = 0 ; i < 8 ; i++)
+            registers[i] = H[i];
+    }
+}
 
 void SHA256_CompressionFunction(WORD_t* registers,
-                                BYTE* buffer);
+                                BYTE* buffer,
+                                WORD_t* K)
+{
+    WORD_t* W = NULL;
+    PreComputeW(buffer, W);
+    for(int j = 0 ; j < 64 ; j++)
+    {
+        WORD_t T_1 = registers[7] & (2 ^ 32 - 1) + sig1(registers[4]) & (2 ^ 32 - 1) + Ch(registers[4], registers[5], registers[6]) & (2 ^ 32 - 1) + K[j] & (2^32 - 1) + W[j];
+        WORD_t T_2 = E0( registers[0] ) & (2^32 - 1) + Maj(registers[0],registers[1],registers[2]) & (2^32 - 1);
+        registers[7] = registers[6];
+        registers[6] = registers[5];
+        registers[5] = registers[4];
+        registers[4] = registers[3] & (2^32 - 1) + T_1 & (2^32 - 1);
+        registers[3] = registers[2];
+        registers[2] = registers[1];
+        registers[1] = registers[0];
+        registers[0] = T_1 & (2^32 - 1) + T_2 & (2^32 - 1);
+    }
+    free(W);
+}
 
 void ComputeIntermediateHash(WORD_t* H,
-                             WORD_t* registers);
+                             WORD_t* registers)
+{
+    for(int i = 0 ; i < 8 ; i++)
+    {
+        H[i] = registers[i] & (2^32 - 1) + H[i] & (2^32 - 1);
+    }
+}

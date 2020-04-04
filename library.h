@@ -48,10 +48,12 @@ void BinToHexString(WORD_t* res_word,
                     char* hash);
 
 void InitRegisters(WORD_t* registers, // un tableau de 8 WORD_t ( taille de H, intermédiate hash value)
-                   WORD_t* H);
+                   WORD_t* H,
+                   int i);
 
 void SHA256_CompressionFunction(WORD_t* registers,
-                                BYTE* buffer);
+                                BYTE* buffer;
+                                WORD_t* K);
 
 void ComputeIntermediateHash(WORD_t* H,
                              WORD_t* registers);
