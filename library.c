@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 
 
 #include "library.h"
@@ -78,7 +79,7 @@ WORD_t Sn(WORD_t x, u_int32 n)
         perror("circulat shift, mauvaise valeur de n"); abort();
     }
 
-    return ( (word_x >> n) | (word_x << (32 - n)) );
+    return ( (x >> n) | (x << (32 - n)) );
 }
 
 WORD_t Rn(WORD_t x, u_int32 n)
@@ -105,7 +106,7 @@ void RemoveAddedBytes(FILE* fptr,
 }
 
 u_int32 MsgPadding(FILE* fptr,
-                   u_int64 size)
+                   u_int64 file_size)
 {
         //fptr est deja ouvert ici
         u_int64* r = malloc(sizeof(u_int64));
@@ -191,7 +192,7 @@ void PreComputeW(BYTE* buffer,
     }
     for(int i = 16 ; i < 64 ; i++)
     {
-        W[i] = sig1( W[i - 2] ) & (2^32 - 1) + W[i - 7] & (2^32 - 1) + sig0( W[i - 15] ) & (2^32 - 1) + W[i - 16] & (2^32 - 1);
+        W[i] = ( sig1( W[i - 2] ) & (0xffffffff) ) + ( W[i - 7] & (0xffffffff) )+ (sig0( W[i - 15] ) & (0xffffffff)) + (W[i - 16] & (0xffffffff));
     }
 }
 
@@ -229,16 +230,16 @@ void SHA256_CompressionFunction(WORD_t* registers,
     PreComputeW(buffer, W);
     for(int j = 0 ; j < 64 ; j++)
     {
-        WORD_t T_1 = registers[7] & (2 ^ 32 - 1) + sig1(registers[4]) & (2 ^ 32 - 1) + Ch(registers[4], registers[5], registers[6]) & (2 ^ 32 - 1) + K[j] & (2^32 - 1) + W[j];
-        WORD_t T_2 = E0( registers[0] ) & (2^32 - 1) + Maj(registers[0],registers[1],registers[2]) & (2^32 - 1);
+        WORD_t T_1 = ( registers[7] & (0xffffffff) ) + ( sig1(registers[4]) & (0xffffffff) ) + ( Ch(registers[4], registers[5], registers[6]) & (0xffffffff) ) + (K[j] & (0xffffffff)) + W[j];
+        WORD_t T_2 = (E0( registers[0] ) & (0xffffffff) ) + ( Maj(registers[0],registers[1],registers[2]) & (0xffffffff) );
         registers[7] = registers[6];
         registers[6] = registers[5];
         registers[5] = registers[4];
-        registers[4] = registers[3] & (2^32 - 1) + T_1 & (2^32 - 1);
+        registers[4] = (registers[3] & (0xffffffff) ) + ( T_1 & (0xffffffff) );
         registers[3] = registers[2];
         registers[2] = registers[1];
         registers[1] = registers[0];
-        registers[0] = T_1 & (2^32 - 1) + T_2 & (2^32 - 1);
+        registers[0] = ( T_1 & (0xffffffff) ) + ( T_2 & (0xffffffff) );
     }
     free(W);
 }
@@ -248,16 +249,17 @@ void ComputeIntermediateHash(WORD_t* H,
 {
     for(int i = 0 ; i < 8 ; i++)
     {
-        H[i] = registers[i] & (2^32 - 1) + H[i] & (2^32 - 1);
+        H[i] = (registers[i] & (0xffffffff) )+ (H[i] & (0xffffffff));
     }
 }
 
 void MainLoop(WORD_t* H,
-              WORD_t* K)
+              WORD_t* K,
+              char* filename)
 {
     unsigned int nb = 0;
     int i = 0;
-    char* buffer = malloc(sizeof(BYTE) * 512 / 8);
+    BYTE* buffer = malloc(sizeof(BYTE) * 512 / 8);
     FILE* fptr_in = fopen(filename, "rb");
     InitK(K);
     WORD_t* registers = malloc(sizeof(WORD_t) * 8);

@@ -5,7 +5,7 @@ EXEC=
 
 all: libsha2.so mysha2
 
-libsha2.so: libsha2.c
+libsha2.so: library.c
 	$(CC) -shared -fPIC $^ -o $@ $(CFLAGS)
 
 mysha2.o: main.c
