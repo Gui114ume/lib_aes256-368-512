@@ -197,7 +197,10 @@ void PreComputeW(BYTE* buffer,
 
 // Ne pas faire la même fonction que dans sha1_lib, essayer de trouver mieux, sans bug
 void BinToHexString(WORD_t* res_word,
-                    char* hash);
+                    char* hash)
+{
+    return (void)0;
+}
 
 void InitRegisters(WORD_t* registers, // un tableau de 8 WORD_t ( taille de H, intermédiate hash value)
                    WORD_t* H,
@@ -247,4 +250,31 @@ void ComputeIntermediateHash(WORD_t* H,
     {
         H[i] = registers[i] & (2^32 - 1) + H[i] & (2^32 - 1);
     }
+}
+
+void MainLoop(WORD_t* H,
+              WORD_t* K)
+{
+    unsigned int nb = 0;
+    int i = 0;
+    char* buffer = malloc(sizeof(BYTE) * 512 / 8);
+    FILE* fptr_in = fopen(filename, "rb");
+    InitK(K);
+    WORD_t* registers = malloc(sizeof(WORD_t) * 8);
+    while( nb = fread(buffer, sizeof(BYTE),512/8,fptr_in) )
+    {
+        InitRegisters(registers, H, i);
+        SHA256_CompressionFunction(registers, buffer, K);
+        ComputeIntermediateHash(H, registers);
+        ++i;
+    }
+    char* hash = malloc(sizeof(char) * 32 * 2);//verifier la taille
+    BinToHexString(H, hash);
+
+    fclose(fptr_in);
+
+    free(hash);
+    free(registers);
+    free(buffer);
+    return (void)0;
 }

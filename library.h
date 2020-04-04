@@ -85,5 +85,7 @@ WORD_t sig1(WORD_t x);
 void RemoveAddedBytes(FILE* fptr,
                       u_int64 size);
 
+void MainLoop(WORD_t* H,
+              WORD_t* K);
 
 #endif //UNTITLED2_LIBRARY_H
