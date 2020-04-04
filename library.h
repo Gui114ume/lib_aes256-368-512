@@ -2,8 +2,10 @@
 #define UNTITLED2_LIBRARY_H
 
 /*
- * Pense bête !! ( x % 2^n )  ==  x & ( 2^n - 1 )
+ * ( x % 2^n )  ==  x & ( 2^n - 1 )
  * 2^32 - 1 = 0xffffffff sur un unsigned int
+ *
+ *
  */
 
 #include <stdlib.h>

@@ -15,8 +15,6 @@
 
 #include "library.h"
 
-WORD_t* glob_K = NULL;
-
 void InitK(WORD_t* K)
 {
     // K est supposé alloué à la bonne taille
@@ -108,66 +106,66 @@ void RemoveAddedBytes(FILE* fptr,
 u_int32 MsgPadding(FILE* fptr,
                    u_int64 file_size)
 {
-        //fptr est deja ouvert ici
-        u_int64* r = malloc(sizeof(u_int64));
-        *r = file_size * 8;
+    //fptr est deja ouvert ici
+    u_int64* r = malloc(sizeof(u_int64));
+    *r = file_size * 8;
 
-        //reflechir a tous les cas possibles lors du padding
-        if( (file_size * 8)%512 == 0 )
-        {
-            BYTE* buffer = malloc(sizeof(BYTE) * 448 / 8);
-            buffer[0] = 1 << 7;
-            for(int i = 1 ; i < 448/8; i++)
-                buffer[i] = 0;
+    //reflechir a tous les cas possibles lors du padding
+    if( (file_size * 8)%512 == 0 )
+    {
+        BYTE* buffer = malloc(sizeof(BYTE) * 448 / 8);
+        buffer[0] = 1 << 7;
+        for(int i = 1 ; i < 448/8; i++)
+            buffer[i] = 0;
 
-            fwrite(buffer, 1, 448/8,fptr);
-            for(int i = 0 ; i < 8 ; i++)
-                fwrite( (char*)r + 7 - i, 1, 1, fptr);
-            fclose(fptr);
-            return 448/8;
+        fwrite(buffer, 1, 448/8,fptr);
+        for(int i = 0 ; i < 8 ; i++)
+            fwrite( (char*)r + 7 - i, 1, 1, fptr);
+        fclose(fptr);
+        return 448/8;
 
-        }
-        else if ( (file_size * 8 )%512 >= 448 ) //chevauchement de bloc
-        {
-            //on padd avec 1, puis des 0 afin de finir le bloc de 512. Ensuite on crée un nouveau bloc de 512 avec des 0, puis on padd avec file_size en binaire.
-            // a ecrire
-            BYTE* buffer = malloc(sizeof(BYTE) * (512/8 - (file_size * 8)%512 / 8) );
-            buffer[0] = 1 << 7;
-            for(int i = 1 ; i < (512/8 -  (file_size * 8)%512 / 8 ); i++ )
-                buffer[i] = 0;
+    }
+    else if ( (file_size * 8 )%512 >= 448 ) //chevauchement de bloc
+    {
+        //on padd avec 1, puis des 0 afin de finir le bloc de 512. Ensuite on crée un nouveau bloc de 512 avec des 0, puis on padd avec file_size en binaire.
+        // a ecrire
+        BYTE* buffer = malloc(sizeof(BYTE) * (512/8 - (file_size * 8)%512 / 8) );
+        buffer[0] = 1 << 7;
+        for(int i = 1 ; i < (512/8 -  (file_size * 8)%512 / 8 ); i++ )
+            buffer[i] = 0;
 
-            fwrite(buffer, 1, ( (512/8 - (file_size * 8)%512 / 8 )),fptr);
+        fwrite(buffer, 1, ( (512/8 - (file_size * 8)%512 / 8 )),fptr);
 
-            BYTE* buff = malloc(sizeof(BYTE) * 448 / 8);
-            buff[0] = 0;
-            for(int i = 1 ; i < 448/8; i++)
-                buff[i] = 0;
+        BYTE* buff = malloc(sizeof(BYTE) * 448 / 8);
+        buff[0] = 0;
+        for(int i = 1 ; i < 448/8; i++)
+            buff[i] = 0;
 
-            fwrite(buff, 1, 448/8,fptr);
-            for(int i = 0 ; i < 8 ; i++)
-                fwrite( (char*)r + 7 - i, 1, 1, fptr);
-            fclose(fptr);
-            return 448/8;
+        fwrite(buff, 1, 448/8,fptr);
+        for(int i = 0 ; i < 8 ; i++)
+            fwrite( (char*)r + 7 - i, 1, 1, fptr);
+        fclose(fptr);
+        return 448/8;
 
-        }
-            //ajouter un bit à 1
-            //ajouter des zeros jusqu'a ce qu'il ne reste plus que 64 bits pour faire un bloc de 512 bits complet
-            //ajouter file_size en tant que u64
-        else if ( (file_size * 8 )%512 < 448 )
-        {
-            //on rempli le bloc avec 0x80 puis on ecrit file_size
-            BYTE* buffer = malloc(sizeof(BYTE) * (512/8 - (file_size * 8)%512 / 8) - 8);
-            buffer[0] = 1 << 7;
-            for(int i = 1 ; i < (512/8 -  (file_size * 8)%512 / 8 ) - 8 ; i++ )
-                buffer[i] = 0;
+    }
+        //ajouter un bit à 1
+        //ajouter des zeros jusqu'a ce qu'il ne reste plus que 64 bits pour faire un bloc de 512 bits complet
+        //ajouter file_size en tant que u64
+    else if ( (file_size * 8 )%512 < 448 )
+    {
+        //on rempli le bloc avec 0x80 puis on ecrit file_size
+        BYTE* buffer = malloc(sizeof(BYTE) * (512/8 - (file_size * 8)%512 / 8) - 8);
+        buffer[0] = 1 << 7;
+        for(int i = 1 ; i < (512/8 -  (file_size * 8)%512 / 8 ) - 8 ; i++ )
+            buffer[i] = 0;
 
-            fwrite(buffer, 1, ( (512/8 - (file_size * 8)%512 / 8 ) - 8 ),fptr);
-            for(int i = 0 ; i < 8 ; i++)
-                fwrite( (char*)r + 7 - i, 1, 1, fptr);
-            fclose(fptr);
-            return 0;
-        }
+        fwrite(buffer, 1, ( (512/8 - (file_size * 8)%512 / 8 ) - 8 ),fptr);
+        for(int i = 0 ; i < 8 ; i++)
+            fwrite( (char*)r + 7 - i, 1, 1, fptr);
+        fclose(fptr);
         return 0;
+    }
+    return 0;
 }
 
 
@@ -183,7 +181,6 @@ u_int64 GetSize(char* filename)
 void PreComputeW(BYTE* buffer,
                  WORD_t* W)
 {
-    W = malloc(sizeof(WORD_t) * 64);
     for(int i = 0,j = 0; i < 16 * 4 ; j++)
     {
         W[j] = (unsigned int) (buffer[i] << 24) ^ (unsigned int) (buffer[i + 1] << 16) ^
@@ -192,7 +189,7 @@ void PreComputeW(BYTE* buffer,
     }
     for(int i = 16 ; i < 64 ; i++)
     {
-        W[i] = ( sig1( W[i - 2] ) & (0xffffffff) ) + ( W[i - 7] & (0xffffffff) )+ (sig0( W[i - 15] ) & (0xffffffff)) + (W[i - 16] & (0xffffffff));
+        W[i] = sig1( W[i - 2] ) + W[i - 7]+ sig0( W[i - 15] ) + W[i - 16];
     }
 }
 
@@ -200,9 +197,16 @@ void PreComputeW(BYTE* buffer,
 void BinToHexString(WORD_t* res_word,
                     char* hash)
 {
+    for(int i = 0 ; i < 8 ; i++)
+    {
+        sprintf(hash + i * 8 * sizeof(char),"%x", res_word[i]);
+    }
+    for(int i = 0; i < 64 ; i++)
+        printf("%c",hash[i]); //n'affiche pas le 0 s'il est en premiere position (hash[0]) !! incomprehension totale
+    printf("\n");
     return (void)0;
 }
-
+//H est supposé deja initialise a la bonne taille
 void InitRegisters(WORD_t* registers, // un tableau de 8 WORD_t ( taille de H, intermédiate hash value)
                    WORD_t* H,
                    int i)
@@ -222,24 +226,24 @@ void InitRegisters(WORD_t* registers, // un tableau de 8 WORD_t ( taille de H, i
     }
 }
 
-void SHA256_CompressionFunction(WORD_t* registers,
-                                BYTE* buffer,
-                                WORD_t* K)
+void SHA256_CompressionFunction(WORD_t* registers, BYTE* buffer, WORD_t* K)
 {
-    WORD_t* W = NULL;
-    PreComputeW(buffer, W);
+    WORD_t* W = malloc(sizeof(WORD_t) * 64);
+    PreComputeW(buffer, W); // W est NULL
+    if(W == NULL)
+        abort();
     for(int j = 0 ; j < 64 ; j++)
     {
-        WORD_t T_1 = ( registers[7] & (0xffffffff) ) + ( sig1(registers[4]) & (0xffffffff) ) + ( Ch(registers[4], registers[5], registers[6]) & (0xffffffff) ) + (K[j] & (0xffffffff)) + W[j];
-        WORD_t T_2 = (E0( registers[0] ) & (0xffffffff) ) + ( Maj(registers[0],registers[1],registers[2]) & (0xffffffff) );
+        WORD_t T_1 = registers[7] +  sig1(registers[4]) +  Ch(registers[4], registers[5], registers[6]) + K[j] + W[j];
+        WORD_t T_2 = E0( registers[0] )  +  Maj(registers[0],registers[1],registers[2]);
         registers[7] = registers[6];
         registers[6] = registers[5];
         registers[5] = registers[4];
-        registers[4] = (registers[3] & (0xffffffff) ) + ( T_1 & (0xffffffff) );
+        registers[4] = registers[3]+T_1;
         registers[3] = registers[2];
         registers[2] = registers[1];
         registers[1] = registers[0];
-        registers[0] = ( T_1 & (0xffffffff) ) + ( T_2 & (0xffffffff) );
+        registers[0] = T_1 + T_2;
     }
     free(W);
 }
@@ -249,7 +253,7 @@ void ComputeIntermediateHash(WORD_t* H,
 {
     for(int i = 0 ; i < 8 ; i++)
     {
-        H[i] = (registers[i] & (0xffffffff) )+ (H[i] & (0xffffffff));
+        H[i] = registers[i]+ H[i];
     }
 }
 
@@ -260,20 +264,30 @@ void MainLoop(WORD_t* H,
     unsigned int nb = 0;
     int i = 0;
     BYTE* buffer = malloc(sizeof(BYTE) * 512 / 8);
-    FILE* fptr_in = fopen(filename, "rb");
+    u_int64 file_size = GetSize(filename);
+    FILE* fptr_in = fopen(filename, "ab");
+    MsgPadding(fptr_in, file_size);
+    fclose(fptr_in);
+    FILE* fptr = fopen(filename, "rb");
+
     InitK(K);
     WORD_t* registers = malloc(sizeof(WORD_t) * 8);
-    while( nb = fread(buffer, sizeof(BYTE),512/8,fptr_in) )
+    while( nb = fread(buffer, sizeof(BYTE), 512/8, fptr) )
     {
         InitRegisters(registers, H, i);
         SHA256_CompressionFunction(registers, buffer, K);
         ComputeIntermediateHash(H, registers);
         ++i;
     }
-    char* hash = malloc(sizeof(char) * 32 * 2);//verifier la taille
+
+    char* hash = malloc(sizeof(char) * 64);//verifier la taille
     BinToHexString(H, hash);
 
-    fclose(fptr_in);
+    fclose(fptr);
+
+    FILE* fptr2 = fopen(filename,"ab");
+    RemoveAddedBytes(fptr2, file_size);
+    fclose(fptr2);
 
     free(hash);
     free(registers);
