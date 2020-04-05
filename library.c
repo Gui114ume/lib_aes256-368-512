@@ -18,8 +18,8 @@
 void InitK(WORD_t* K)
 {
     // K est supposé alloué à la bonne taille
-    K[0] = 0x428a2f98;  K[1] = 0x71374491;  K[2] = 0xb5c0fbcf;  K[3] = 0xe9b5dba5;
-    K[4] = 0x3956c25b;  K[5] = 0x59f111f1;  K[6] = 0x923f82a4;  K[7] = 0xab1c5ed5;
+    K[0]  = 0x428a2f98; K[1]  = 0x71374491; K[2]  = 0xb5c0fbcf; K[3]  = 0xe9b5dba5;
+    K[4]  = 0x3956c25b; K[5]  = 0x59f111f1; K[6]  = 0x923f82a4; K[7]  = 0xab1c5ed5;
     K[8]  = 0xd807aa98; K[9]  = 0x12835b01; K[10] = 0x243185be; K[11] = 0x550c7dc3;
     K[12] = 0x72be5d74; K[13] = 0x80deb1fe; K[14] = 0x9bdc06a7; K[15] = 0xc19bf174;
     K[16] = 0xe49b69c1; K[17] = 0xefbe4786; K[18] = 0x0fc19dc6; K[19] = 0x240ca1cc;
@@ -40,7 +40,7 @@ WORD_t Ch(WORD_t x,
           WORD_t y,
           WORD_t z)
 {
-    return (  ( x & y ) ^ ( ~x  & z ) );
+    return (  ( x & y ) ^ ( (~x)  &  z ) );
 }
 
 WORD_t Maj(WORD_t x,
@@ -82,7 +82,7 @@ WORD_t Sn(WORD_t x, u_int32 n)
 
 WORD_t Rn(WORD_t x, u_int32 n)
 {
-    return ( x << n);
+    return ( x >> n);
 }
 
 void RemoveAddedBytes(FILE* fptr,
@@ -189,7 +189,7 @@ void PreComputeW(BYTE* buffer,
     }
     for(int i = 16 ; i < 64 ; i++)
     {
-        W[i] = sig1( W[i - 2] ) + W[i - 7]+ sig0( W[i - 15] ) + W[i - 16];
+        W[i] = sig1( W[i - 2] ) + W[i - 7] + sig0( W[i - 15] ) + W[i - 16];
     }
 }
 
@@ -209,10 +209,11 @@ void BinToHexString(WORD_t* res_word,
 //H est supposé deja initialise a la bonne taille
 void InitRegisters(WORD_t* registers, // un tableau de 8 WORD_t ( taille de H, intermédiate hash value)
                    WORD_t* H,
-                   int i)
+                   int* i)
 {
-    if( i == 1)
+    if( *i == 1)
     {
+        *i = 0;
         registers[0] = H1_0; registers[1] = H2_0; registers[2] = H3_0; registers[3] = H4_0;
         registers[4] = H5_0; registers[5] = H6_0; registers[6] = H7_0; registers[7] = H8_0;
 
@@ -234,12 +235,13 @@ void SHA256_CompressionFunction(WORD_t* registers, BYTE* buffer, WORD_t* K)
         abort();
     for(int j = 0 ; j < 64 ; j++)
     {
-        WORD_t T_1 = registers[7] +  sig1(registers[4]) +  Ch(registers[4], registers[5], registers[6]) + K[j] + W[j];
+        // register 0 et register 4 sont faux, donc pbleme avec T_1 sur, T_2 peut ettre
+        WORD_t T_1 = registers[7] +  E1(registers[4]) +  Ch(registers[4], registers[5], registers[6]) + K[j] + W[j];
         WORD_t T_2 = E0( registers[0] )  +  Maj(registers[0],registers[1],registers[2]);
         registers[7] = registers[6];
         registers[6] = registers[5];
         registers[5] = registers[4];
-        registers[4] = registers[3]+T_1;
+        registers[4] = registers[3]+ T_1;
         registers[3] = registers[2];
         registers[2] = registers[1];
         registers[1] = registers[0];
@@ -253,7 +255,7 @@ void ComputeIntermediateHash(WORD_t* H,
 {
     for(int i = 0 ; i < 8 ; i++)
     {
-        H[i] = registers[i]+ H[i];
+        H[i] = registers[i] + H[i];
     }
 }
 
@@ -262,7 +264,7 @@ void MainLoop(WORD_t* H,
               char* filename)
 {
     unsigned int nb = 0;
-    int i = 0;
+    int i = 1;
     BYTE* buffer = malloc(sizeof(BYTE) * 512 / 8);
     u_int64 file_size = GetSize(filename);
     FILE* fptr_in = fopen(filename, "ab");
@@ -272,15 +274,14 @@ void MainLoop(WORD_t* H,
 
     InitK(K);
     WORD_t* registers = malloc(sizeof(WORD_t) * 8);
+    char* hash = malloc(sizeof(char) * 64);//verifier la taille
     while( nb = fread(buffer, sizeof(BYTE), 512/8, fptr) )
     {
-        InitRegisters(registers, H, i);
+        InitRegisters(registers, H, &i);
         SHA256_CompressionFunction(registers, buffer, K);
         ComputeIntermediateHash(H, registers);
-        ++i;
     }
 
-    char* hash = malloc(sizeof(char) * 64);//verifier la taille
     BinToHexString(H, hash);
 
     fclose(fptr);

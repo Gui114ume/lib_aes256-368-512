@@ -52,7 +52,7 @@ void BinToHexString(WORD_t* res_word,
 
 void InitRegisters(WORD_t* registers, // un tableau de 8 WORD_t ( taille de H, intermédiate hash value)
                    WORD_t* H,
-                   int i);
+                   int* i);
 
 void SHA256_CompressionFunction(WORD_t* registers,
                                 BYTE* buffer,
