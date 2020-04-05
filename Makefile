@@ -15,4 +15,4 @@ mysha2 : mysha2.o libsha2.so
 	$(CC) $^ -o $@ $(LDFLAGS)
 
 clean:
-	 rm -rf *.o
+	 rm -rf *.o file~ libsha2.so mysha2

@@ -1,6 +1,6 @@
 /*
  *
- * Implementation SHA 256 / 384 / 512
+ * Implementation SHA 256
  *
  */
 
