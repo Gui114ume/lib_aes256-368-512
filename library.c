@@ -3,16 +3,6 @@
  * Implementation SHA 256
  *
  */
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-
 #include "library.h"
 
 void InitK(WORD_t* K)
@@ -235,7 +225,6 @@ void SHA256_CompressionFunction(WORD_t* registers, BYTE* buffer, WORD_t* K)
         abort();
     for(int j = 0 ; j < 64 ; j++)
     {
-        // register 0 et register 4 sont faux, donc pbleme avec T_1 sur, T_2 peut ettre
         WORD_t T_1 = registers[7] +  E1(registers[4]) +  Ch(registers[4], registers[5], registers[6]) + K[j] + W[j];
         WORD_t T_2 = E0( registers[0] )  +  Maj(registers[0],registers[1],registers[2]);
         registers[7] = registers[6];

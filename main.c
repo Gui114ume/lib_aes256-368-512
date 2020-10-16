@@ -6,7 +6,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
 #include "library.h"
 
 int main(int argc, char** argv)

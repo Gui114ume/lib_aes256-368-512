@@ -14,6 +14,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+
 
 typedef unsigned long long u_int64;
 typedef unsigned int       u_int32;
@@ -39,8 +41,6 @@ u_int32 MsgPadding(FILE* fptr,
 
 u_int64 GetSize(char* filename);
 
-//void Divide_M_InWord(BYTE* buffer,
-//                     WORD_t* W);
 
 // alloue W, puis calcule et rempli ce tableau W
 void PreComputeW(BYTE* buffer,
